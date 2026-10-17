@@ -40,7 +40,8 @@ What it **can't** do: draw on your screen (no boxes or lines through walls), pre
 ## 2b. Turning it off
 
 - **Turn off just the cheats, stay connected:** type `.panic` (or press **Turn everything off** in the menu). Every module switches off and you keep playing through the client.
-- **Stop the client:** close the black `start.bat` window, or click it and press `Ctrl + C`. Anyone joined through it is disconnected right away.
+- **Stop the client:** close the black `start.bat` window, or click it and press `Ctrl + C` (if it asks `Terminate batch job (Y/N)?`, press `Y` then Enter). You're kicked with "Glazed Bedrock was closed".
+- **Still connected after closing it?** Another copy is running in the background. Open **Task Manager** (`Ctrl + Shift + Esc`), find **Node.js JavaScript Runtime**, and click **End task** (end all of them).
 - **Play without it:** join DonutSMP from your normal server list (`donutsmp.net`, not the **Glazed** entry). Nothing is installed in Minecraft, so with the window closed the game is 100% normal.
 - **Start again later:** double-click `start.bat` and join **Glazed**.
 - **Remove it completely:**
@@ -174,7 +175,7 @@ For the biggest FPS gains, also lower these in **Settings → Video**: render di
 
 | What you see | Fix |
 |---|---|
-| `Failed to bind server … is the port free?` | Glazed is already running in another window. Close the extra window. |
+| `Failed to bind server … is the port free?` | Glazed is already running in another window (or in the background). Close the extra window, or end **Node.js JavaScript Runtime** in Task Manager. |
 | Nothing happens when joining **Glazed** | Make sure the black window is open and shows "proxy on 127.0.0.1:19134". |
 | No `<Glazed> Loaded` in chat | You joined DonutSMP directly (or from the Friends tab). Join the **Glazed** entry (`127.0.0.1` port `19134`). |
 | Kicked with a sign-in code every time | Finish signing in on the Microsoft page **before** rejoining. Wait until it says you're signed in. |

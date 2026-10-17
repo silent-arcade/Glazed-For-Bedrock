@@ -25,4 +25,4 @@ echo The first time you join you get a Microsoft sign-in code: open the link, en
 echo Keep this window open while you play.
 echo.
 node src\index.js
-pause
+if errorlevel 1 pause

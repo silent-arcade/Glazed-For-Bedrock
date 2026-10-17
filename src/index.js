@@ -236,6 +236,17 @@ function main () {
   }, 50)
 
   relay.listen()
+  // Ctrl+C / closing the window: kick players with a clear reason instead of leaving them to time out
+  let stopping = false
+  const stop = () => {
+    if (stopping) return
+    stopping = true
+    console.log('Stopping Glazed Bedrock...')
+    const quit = () => process.exit(0)
+    relay.close('§dGlazed Bedrock was closed.§f Join the server directly to play without it.').then(quit, quit)
+    setTimeout(quit, 2000).unref()
+  }
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(sig, stop)
   console.log(`Glazed Bedrock proxy on ${config.proxy.host}:${config.proxy.port} -> ${server.host}:${server.port} (Bedrock ${config.version})`)
   console.log(`Add a server in Minecraft with address 127.0.0.1 and port ${config.proxy.port}.`)
 }
