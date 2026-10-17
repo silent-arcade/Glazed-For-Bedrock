@@ -16,7 +16,7 @@ function decide (direction, name, params, des, handler) {
   return before !== null && json(params) !== before ? 're-encode' : 'raw'
 }
 
-function install (player, { onClientbound, onServerbound }) {
+function install (player, { onClientbound, onServerbound, onUnparsed }) {
   const deserializer = player.server.deserializer
 
   // Backend -> proxy -> game (mirrors RelayPlayer.readUpstream)
@@ -54,6 +54,7 @@ function install (player, { onClientbound, onServerbound }) {
     try {
       des = deserializer.parsePacketBuffer(packet)
     } catch (e) {
+      onUnparsed?.(packet, e)
       this.upstream.sendBuffer(packet)
       return
     }

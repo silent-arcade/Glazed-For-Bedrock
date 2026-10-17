@@ -82,15 +82,39 @@ class Core {
   toggle (mod) { this.setEnabled(mod, !mod.enabled) }
 
   // Which server the proxy joins. Saved, and used from the next join on (the current connection stays).
+  // Saved server list for the picker; DonutSMP is always there to start with
+  get servers () {
+    if (!Array.isArray(this.config.servers)) {
+      const cur = this.config.server
+      this.config.servers = [{ host: 'donutsmp.net', port: 19132 }]
+      if (cur && cur.host !== 'donutsmp.net') this.config.servers.push({ host: cur.host, port: cur.port })
+    }
+    return this.config.servers
+  }
+
+  removeServer (n) {
+    const s = this.servers[n - 1]
+    if (!s) throw new Error(`no server #${n}, see ${this.config.prefix}server`)
+    this.servers.splice(n - 1, 1)
+    this.save()
+    this.chat(`§7Removed §f${s.host}:${s.port}§7 from the list.`)
+  }
+
+  // Saves the server, remembers it in the list, then sends the game back through the proxy so it lands there now
   setServer (host, port = 19132) {
-    host = String(host || '').trim()
+    host = String(host || '').trim().toLowerCase()
     port = Number(port)
     if (!/^[a-z0-9.-]+$/i.test(host)) throw new Error('enter a server address like play.example.net')
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('port must be 1-65535')
     this.config.server = { host, port }
+    if (!this.servers.some(s => s.host === host && s.port === port)) this.servers.push({ host, port })
     if (this.destination) Object.assign(this.destination, { host, port }) // the live proxy reads this on each join
     this.save()
-    this.chat(`§aServer set to §f${host}:${port}§a. Leave and join again to switch.`)
+    const proxy = this.config.proxy || {}
+    // shortcut: a phone joined over LAN (proxy host 0.0.0.0) can't be sent to 127.0.0.1, so it rejoins by hand
+    if (!this.player || proxy.host === '0.0.0.0') return this.chat(`§aServer set to §f${host}:${port}§a. Leave and join again to switch.`)
+    this.chat(`§aSwitching to §f${host}:${port}§a...`)
+    setTimeout(() => this.toClient('transfer', { server_address: '127.0.0.1', port: proxy.port || 19134, reload_world: true }), 500)
   }
 
   setSetting (mod, k, raw) {
@@ -115,7 +139,11 @@ class Core {
   toClient (name, params) { this.player?.queue(name, params) }
   toServer (name, params) { this.player?.upstream?.queue(name, params) }
 
-  chat (msg) {
+  // Short replies (confirmations, errors) go above the hotbar so chat stays clean
+  chat (msg) { this.alert('actionbar', msg, false) }
+
+  // Real chat lines: output the player asked to read (.list, .get, ...) and alerts set to "chat"
+  info (msg) {
     const format = this.config.chatFormat || 'chat'
     this.toClient('text', Core.textPacket(format, format === 'chat' ? msg : '§d[Glazed]§r ' + msg))
   }
@@ -149,7 +177,7 @@ class Core {
   // Actionbar alerts queue up and each shows ~2.5 s, so several finds at once don't overwrite each other.
   alert (style, msg, sound = true) {
     if (style === 'off') return
-    if (style === 'chat' || style === 'both') this.chat(msg)
+    if (style === 'chat' || style === 'both') this.info(msg)
     if (style === 'actionbar' || style === 'both') {
       this.alertQueue ||= []
       if (this.alertQueue.length >= 4) this.alertQueue.shift()
@@ -460,8 +488,10 @@ class Core {
       return true
     }
     const mod = this.modules.get(this.config.binds[emoteId])
+    console.log(`[bind] emote ${emoteId} -> ${mod ? mod.name : 'not bound'}`)
     if (!mod) return false
-    this.toggle(mod)
+    if (mod.onBind) mod.onBind() // e.g. Click GUI: the bind opens the menu instead of switching the module off
+    else this.toggle(mod)
     return true
   }
 

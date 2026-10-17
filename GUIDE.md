@@ -22,20 +22,20 @@ What it **can't** do: draw on your screen (no boxes or lines through walls), pre
 
 1. **Install Node.js.** Go to <https://nodejs.org>, download the **LTS** version and install it with the default options.
 2. **Download Glazed Bedrock.** On the GitHub page open **Releases** and download `glazed-bedrock.zip`. Unzip it somewhere easy to find, like `Documents\Glazed Bedrock`.
-3. **Start it.** Double-click **`start.bat`**. The first time, it installs what it needs, which takes about a minute. When you see `Glazed Bedrock proxy on 127.0.0.1:19134 -> donutsmp.net:19132`, it's ready. **Keep this window open while you play.**
+3. **Start it.** Double-click **`start.bat`**. The first time, it installs what it needs, which takes about a minute, then asks you to sign in (step 5). When you see `Glazed Bedrock proxy on 127.0.0.1:19134 -> donutsmp.net:19132`, it's ready. **Keep this window open while you play.**
 4. **Add the server in Minecraft.**
    - Go to **Play → Servers** (the **Servers** tab, not Friends) and click **Add Server**.
    - Name it **Glazed**, set the address to **`127.0.0.1`** and the port to **`19134`**, then save.
-5. **Sign in once.**
-   - **Get the code:** join **Glazed**. The first time you're kicked with a **Microsoft sign-in code**, also shown in the black window.
-   - **Sign in:** open <https://www.microsoft.com/link>, enter the code, and sign in with your Minecraft account. Wait until the page says you're signed in.
-   - **Rejoin:** join **Glazed** again. You won't be asked again on this PC.
+5. **Sign in once.** The first time you start it, the black window shows **"Sign in to Microsoft"** with a code.
+   - Open <https://www.microsoft.com/link>, enter the code, and sign in with your Minecraft account.
+   - The window says **"Signed in"** by itself, then shows `Glazed Bedrock proxy on 127.0.0.1:19134…`. Now join **Glazed**.
+   - The login is saved in the `auth` folder, so you won't be asked again on this PC.
 
 ## 2. Every time you play
 
 1. Double-click **`start.bat`** and leave the window open.
 2. In Minecraft, join **Glazed**.
-3. After loading, chat shows **`<Glazed> Loaded. Type .gui for the menu…`**. You're in DonutSMP with the client running.
+3. After loading, **`Loaded. Type .gui for the menu…`** shows above the hotbar. You're in DonutSMP with the client running.
 
 ## 2b. Turning it off
 
@@ -57,14 +57,14 @@ If you open it from chat, the menu appears as soon as you close the chat screen.
 
 - **Main screen:** one button per category (Protection, Main, ESP, Render, Client, Performance), showing how many modules are on. Below those:
   - **Enabled modules:** everything that's on, in one list.
-  - **Server:** change which server you join.
+  - **Server:** pick which server to play on.
   - **Turn everything off:** panic button.
 - **Category screen:** every module has an on/off switch. Flip as many as you like and press **Submit**. To change a module's options, pick it under **"Open settings for"** at the bottom before submitting.
 - **Settings screen:** the module's options, plus **Bind** at the bottom (see section 5). Press **Submit** to save. Settings are remembered for next time.
 
 ## 4. Chat commands
 
-Everything starting with a dot stays on your PC. The server never sees it.
+Everything starting with a dot stays on your PC. The server never sees it. Short replies (like "Enabled freecam") show above the hotbar, not in chat. Only things you asked to read (`.list`, `.get`, `.binds`, `.server`) go in chat.
 
 | Command | What it does |
 |---|---|
@@ -75,7 +75,7 @@ Everything starting with a dot stays on your PC. The server never sees it.
 | `.get <module>` | Show a module's settings |
 | `.set <module> <setting> <value>` | Change a setting, e.g. `.set rtper target-x 5000` |
 | `.bind <module>` / `.unbind <module>` / `.binds` | Emote binds (section 5) |
-| `.server <address> [port]` | Join a different server next time (section 6) |
+| `.server` / `.server <number>` / `.server <address> [port]` | List your servers / go to one / add one and go (section 6) |
 | `.region` | Your DonutSMP region |
 | `.panic` | Turn every module off |
 | `.exploittest` | Check the crash protection (section 7) |
@@ -97,12 +97,20 @@ Minecraft only tells the client about *actions* (jump, sneak, emotes), not indiv
 2. Press your emote key and pick an emote. Chat confirms the bind.
 3. From now on, using that emote turns Freecam on/off. The emote never plays and the server never sees it.
 
+Binding **Click GUI** this way (`.bind click-gui`) makes that emote open the menu.
+
 ## 6. Switching servers
 
-- In the menu: **Server**, then enter the address and port.
-- Or in chat: `.server play.example.net` (add the port if it isn't 19132).
+Glazed keeps a list of servers (DonutSMP plus every server you add). Picking one moves you there straight away: the screen reloads and you land on the new server, still through Glazed.
 
-Then leave and join **Glazed** again; you'll land on the new server. To go back: `.server donutsmp.net`.
+- **In the menu:** **Server**, then pick one under **Go to** and press **Submit**. To add a new one, type its address (and port, if it isn't 19132) under **Or add a new server**.
+- **In chat:**
+  - `.server`: show the list, numbered.
+  - `.server 1`: go to server #1 (DonutSMP).
+  - `.server play.example.net`: add that server and go there (add the port if it isn't 19132).
+  - `.server remove 2`: take #2 off the list.
+
+The server you picked is remembered, so next time you join **Glazed** you land there again.
 
 ## 7. The modules
 
@@ -177,8 +185,8 @@ For the biggest FPS gains, also lower these in **Settings → Video**: render di
 |---|---|
 | `Failed to bind server … is the port free?` | Glazed is already running in another window (or in the background). Close the extra window, or end **Node.js JavaScript Runtime** in Task Manager. |
 | Nothing happens when joining **Glazed** | Make sure the black window is open and shows "proxy on 127.0.0.1:19134". |
-| No `<Glazed> Loaded` in chat | You joined DonutSMP directly (or from the Friends tab). Join the **Glazed** entry (`127.0.0.1` port `19134`). |
-| Kicked with a sign-in code every time | Finish signing in on the Microsoft page **before** rejoining. Wait until it says you're signed in. |
+| No "Loaded" message above the hotbar | You joined DonutSMP directly (or from the Friends tab). Join the **Glazed** entry (`127.0.0.1` port `19134`). |
+| Asked to sign in every start | The `auth` folder isn't being kept. Don't run it from inside the zip: unzip it first, and don't delete `auth`. |
 | Kicked with a reason from the server | The reason is the server's own; it's also shown in the black window. |
 | "Outdated client/server" | Your Minecraft is newer than the client. Update the client (download the newest release). |
 | Menu doesn't appear after `.gui` | It opens once you close the chat screen. |

@@ -18,7 +18,7 @@ Glazed's code is "All Rights Reserved", so none of it is copied here. Every modu
 
 In Minecraft: **Play → Servers → Add Server**, address `127.0.0.1`, port `19134`. Join it.
 
-- **First join:** you're kicked with a Microsoft sign-in code (it's also printed in the console). Open the link, enter the code, and rejoin. The login is saved in `auth/`. Keep that folder private.
+- **First start:** the console shows a Microsoft sign-in code. Open the link, enter the code, and sign in; the console continues by itself. The login is saved in `auth/`. Keep that folder private.
 - **"Outdated client/server":** your game is newer than the protocol version this was built for (`1.26.51`). Run `npm install bedrock-protocol@latest`, then set `"version"` in `config.json` to your game version.
 - **Can't connect on an older Windows (UWP) version of the game:** run this once in an admin terminal:
   `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
@@ -35,7 +35,7 @@ Type commands in chat. They're never sent to the server.
 | `.gui` | Opens the menu (or use the bind: double-tap sneak by default; change it with `.set click-gui bind double-sneak/double-jump/emote/off`) |
 | `.bind <module>` | Then use any emote: that emote now turns the module on/off (it never plays or reaches the server). One emote per module, up to 8 with a full emote wheel. Also in each module's settings |
 | `.unbind <module>` / `.binds` | Remove a bind / list them |
-| `.server <address> [port]` | Switches which server you join (also in the menu under Server). Leave and rejoin to switch |
+| `.server` | Lists your saved servers. `.server <number>` goes to one now (the game reloads through the proxy), `.server <address> [port]` adds one and goes there, `.server remove <number>` deletes one. Also in the menu under Server |
 | `.t <module>` | Flips a module on or off |
 | `.on <module> [more...]` / `.off ...` | Switches one or more modules on or off |
 | `.set <module> <setting> <value>` | Changes a setting (lists are comma-separated) |

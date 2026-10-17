@@ -1,5 +1,10 @@
 const fs = require('fs')
 const path = require('path')
+// One Microsoft login per PC: the relay would key the token cache on each join's xuid, so the sign-in done at
+// startup would never be found. Must run before bedrock-protocol is loaded, which copies Authflow on require.
+const prismarineAuth = require('prismarine-auth')
+const BaseAuthflow = prismarineAuth.Authflow
+prismarineAuth.Authflow = class extends BaseAuthflow { constructor (username, ...rest) { super('glazed', ...rest) } }
 const { Relay } = require('bedrock-protocol')
 const { CURRENT_VERSION } = require('bedrock-protocol/src/options')
 const { Core } = require('./core')
@@ -54,19 +59,19 @@ function handleCommand (core, line) {
     case 'list': case 'modules': {
       const byCat = {}
       for (const m of core.modules.values()) (byCat[m.category] ||= []).push(`${m.enabled ? '§a' : '§7'}${m.name}`)
-      for (const [cat, names] of Object.entries(byCat)) core.chat(`§d${cat}: ${names.join('§8, ')}`)
+      for (const [cat, names] of Object.entries(byCat)) core.info(`§d${cat}: ${names.join('§8, ')}`)
       return
     }
     case 'set': {
       need()
       const [, k, ...rest] = args
       const v = core.setSetting(mod, k, rest.join(' '))
-      return core.chat(`§f${mod.name}.${k} §7= §f${Array.isArray(v) ? v.join(', ') : v}`)
+      return core.info(`§f${mod.name}.${k} §7= §f${Array.isArray(v) ? v.join(', ') : v}`)
     }
     case 'get': case 'info':
       need()
-      core.chat(`§f${mod.name} §7(${mod.enabled ? '§aon' : '§coff'}§7) — ${mod.description}`)
-      for (const [k, def] of Object.entries(mod.settings)) core.chat(`  §b${k} §7= §f${[].concat(mod.s[k]).join(', ')} §8(${def.type}${def.options ? ': ' + def.options.join('/') : ''})`)
+      core.info(`§f${mod.name} §7(${mod.enabled ? '§aon' : '§coff'}§7) — ${mod.description}`)
+      for (const [k, def] of Object.entries(mod.settings)) core.info(`  §b${k} §7= §f${[].concat(mod.s[k]).join(', ')} §8(${def.type}${def.options ? ': ' + def.options.join('/') : ''})`)
       return
     case 'panic': case 'off':
       for (const m of core.enabledModules()) core.setEnabled(m, false, true)
@@ -90,12 +95,20 @@ function handleCommand (core, line) {
       return core.chat(`§f${mod.name} §7has no bind now.`)
     case 'binds': {
       const list = Object.values(core.config.binds || {})
-      return core.chat(list.length ? `§fBound to emotes: §b${list.join('§7, §b')}` : '§7No binds yet. Use §b.bind <module>§7.')
+      return core.info(list.length ? `§fBound to emotes: §b${list.join('§7, §b')}` : '§7No binds yet. Use §b.bind <module>§7.')
     }
     case 'server': {
+      const p = core.config.prefix
       if (!args[0]) {
-        const s = core.config.server
-        return core.chat(`Server: §f${s.host}:${s.port}§7. Change it with §b${core.config.prefix}server <address> [port]`)
+        const cur = core.config.server
+        const list = core.servers.map((s, i) => `§b${i + 1}§7: §f${s.host}${s.port === 19132 ? '' : ':' + s.port}${s.host === cur.host && s.port === cur.port ? ' §a(current)' : ''}`)
+        return core.info(`§fServers:\n${list.join('\n')}\n§7Go to one: §b${p}server <number>§7, add one: §b${p}server <address> [port]§7, remove: §b${p}server remove <number>`)
+      }
+      if (args[0] === 'remove') return core.removeServer(Number(args[1]))
+      if (/^\d+$/.test(args[0]) && !args[1]) {
+        const s = core.servers[Number(args[0]) - 1]
+        if (!s) throw new Error(`no server #${args[0]}, see ${p}server`)
+        return core.setServer(s.host, s.port)
       }
       return core.setServer(args[0], args[1] || 19132)
     }
@@ -106,12 +119,25 @@ function handleCommand (core, line) {
     }
     default: {
       const p = core.config.prefix
-      core.chat(`§fCommands: §b${p}gui§7 (menu), §b${p}t <module>§7, §b${p}set <module> <setting> <value>§7, §b${p}get <module>§7, §b${p}list§7, §b${p}panic§7, §b${p}region`)
+      core.info(`§fCommands: §b${p}gui§7 (menu), §b${p}t <module>§7, §b${p}set <module> <setting> <value>§7, §b${p}get <module>§7, §b${p}list§7, §b${p}panic§7, §b${p}region`)
     }
   }
 }
 
-function main () {
+// Signs in to Microsoft in this window before anyone joins, and waits until it's done.
+// Once saved in auth/, this returns straight away on later starts.
+async function signIn (folder) {
+  const flow = new prismarineAuth.Authflow('glazed', folder, { authTitle: prismarineAuth.Titles.MinecraftNintendoSwitch, deviceType: 'Nintendo', flow: 'live' }, code => {
+    console.log('\n=== Sign in to Microsoft (only needed once on this PC) ===')
+    console.log(`1. Open ${code.verification_uri}`)
+    console.log(`2. Enter the code ${code.user_code}`)
+    console.log('3. Sign in with your Minecraft account. This window continues by itself when you are done.\n')
+  })
+  await flow.getXboxToken('https://multiplayer.minecraft.net/')
+  console.log('Signed in. Your login is saved in the auth folder: never share it.')
+}
+
+async function main () {
   const config = loadConfig()
   // --local: test against a Bedrock Dedicated Server on this PC (online-mode=false), no Microsoft sign-in needed for that hop
   const debug = config.debug || process.argv.includes('--debug')
@@ -156,6 +182,9 @@ function main () {
 
   relay.on('connect', player => {
     console.log('Client connected:', player.connection.address)
+    // the disconnect screen prints § color codes literally, so send kick reasons as plain text
+    const disconnect = player.disconnect.bind(player)
+    player.disconnect = (reason, ...rest) => disconnect(String(reason ?? '').replace(/§./g, ''), ...rest)
     const onClientbound = (name, params, des) => {
       if (debug && name === 'text') dlog('[debug] server -> game text', JSON.stringify(params))
       core.onClientbound(name, params, des)
@@ -164,15 +193,15 @@ function main () {
     const onServerbound = (name, params, des) => {
       if (debug) {
         if (!seenNames.has(name)) { seenNames.add(name); dlog('[debug] game sent first', name) }
-        if (name === 'text' || name === 'command_request' || name === 'modal_form_response') dlog('[debug] game ->', name, JSON.stringify(params, (k, v) => typeof v === 'bigint' ? String(v) : v))
+        if (name === 'text' || name === 'command_request' || name === 'modal_form_response' || name === 'emote') dlog('[debug] game ->', name, JSON.stringify(params, (k, v) => typeof v === 'bigint' ? String(v) : v))
       }
       // The game finished loading: earlier chat/forms would have been dropped by its loading screen.
       if (name === 'set_local_player_as_initialized') welcome()
-      if (name === 'text' && typeof params.message === 'string' && params.message.startsWith(config.prefix)) {
+      if (name === 'text' && typeof params.message === 'string' && params.message.trimStart().startsWith(config.prefix)) {
         console.log('[command]', params.message)
         des.canceled = true
         try {
-          handleCommand(core, params.message.slice(config.prefix.length))
+          handleCommand(core, params.message.trimStart().slice(config.prefix.length))
         } catch (e) {
           core.chat('§c' + e.message)
         }
@@ -184,7 +213,9 @@ function main () {
       }
       core.onServerbound(name, params, des)
     }
-    passthrough.install(player, { onClientbound, onServerbound })
+    // a game packet our protocol version can't read goes to the server untouched, so no module ever sees it
+    const onUnparsed = (packet, e) => { if (debug) dlog('[debug] game sent a packet this client cannot read: id', packet[0], e.message) }
+    passthrough.install(player, { onClientbound, onServerbound, onUnparsed })
     player.on('close', () => {
       console.log('Client disconnected')
       for (const m of core.modules.values()) {
@@ -235,6 +266,16 @@ function main () {
     core.renderBeams()
   }, 50)
 
+  if (!server.offline) {
+    try {
+      await signIn(path.join(ROOT, 'auth'))
+    } catch (e) {
+      console.log('Microsoft sign-in failed:', e.message)
+      console.log('Close this window and run start.bat again to retry.')
+      process.exitCode = 1
+      return
+    }
+  }
   relay.listen()
   // Ctrl+C / closing the window: kick players with a clear reason instead of leaving them to time out
   let stopping = false

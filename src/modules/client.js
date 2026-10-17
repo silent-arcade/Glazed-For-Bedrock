@@ -123,6 +123,7 @@ module.exports = [
     settings: {
       bind: { type: 'enum', options: ['double-sneak', 'double-jump', 'emote', 'off'], default: 'double-sneak', desc: 'double-sneak / double-jump = tap twice; emote = press the emote key and pick any emote' }
     },
+    onBind () { gui.openMain(this.c) },
     serverbound (name, p) {
       const bind = this.s.bind
       if (bind === 'emote' && name === 'emote') {

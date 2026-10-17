@@ -298,7 +298,7 @@ handleCommand(core, 'set anti-exploit block-transfer true')
 assert.strictEqual(clientbound('transfer', { server_address: 'evil.example', port: 19132 }), true)
 ax.lastReport = 0
 core.emit('onTick')
-assert.ok(sentClient.some(p => p.name === 'text' && p.params.message.includes('Blocked:')), 'blocked summary shown')
+assert.ok(shown('Blocked:'), 'blocked summary shown')
 
 // .exploittest: with protection on nothing harmful gets through; with it off everything does (and still encodes)
 const lastChat = () => [...sentClient].reverse().find(p => p.name === 'text' && p.params.message.includes('Exploit test done')).params.message
@@ -382,6 +382,15 @@ assert.strictEqual(rn.enabled, true, 'bound emote toggles the module')
 assert.strictEqual(serverbound('emote', emote('other-id')), false, 'unbound emotes play normally')
 handleCommand(core, 'unbind rain-noti')
 assert.strictEqual(config.binds['wave-id'], undefined)
+// a Click GUI bind opens the menu; it must not switch Click GUI (and its double-sneak bind) off
+const clickGui = mod('click-gui')
+const bindMenusBefore = sentClient.filter(p => p.name === 'modal_form_request').length
+handleCommand(core, 'bind click-gui')
+serverbound('emote', emote('menu-id'))
+assert.strictEqual(serverbound('emote', emote('menu-id')), true)
+assert.strictEqual(clickGui.enabled, true, 'click-gui stays on')
+assert.ok(sentClient.filter(p => p.name === 'modal_form_request').length > bindMenusBefore, 'bound emote opens the menu')
+handleCommand(core, 'unbind click-gui')
 
 // changing the server: saved, and the live proxy destination follows
 config.server = { host: 'donutsmp.net', port: 19132 }
@@ -399,11 +408,11 @@ assert.ok(gui.handleResponse(core, { form_id: f.form_id, has_response_data: fals
 setTimeout(() => assert.notStrictEqual(lastForm().form_id, f.form_id, 'busy form resent'), 600)
 
 // client chat defaults to the server's player-chat shape; .chatformat switches it
-core.chat('hello')
+core.info('hello')
 assert.deepStrictEqual([sentClient.at(-1).params.type, sentClient.at(-1).params.category, sentClient.at(-1).params.source_name, sentClient.at(-1).params.message], ['chat', 'authored', '§dGlazed§r', 'hello'])
 handleCommand(core, 'chatformat json')
 assert.strictEqual(core.config.chatFormat, 'json')
-core.chat('hi')
+core.info('hi')
 assert.strictEqual(JSON.parse(sentClient.at(-1).params.message).rawtext[0].text, '§d[Glazed]§r hi')
 assert.throws(() => handleCommand(core, 'chatformat nope'))
 
@@ -422,10 +431,11 @@ setTimeout(() => {
     assert.strictEqual(back.data.name, p.name)
     names.add(p.name)
   }
-  for (const n of ['text', 'set_title', 'play_sound', 'add_entity', 'remove_entity', 'set_display_objective', 'set_score', 'remove_objective', 'command_request', 'player_hotbar', 'request_chunk_radius', 'level_event', 'modal_form_request']) {
+  for (const n of ['text', 'set_title', 'play_sound', 'add_entity', 'remove_entity', 'set_display_objective', 'set_score', 'remove_objective', 'command_request', 'player_hotbar', 'request_chunk_radius', 'level_event', 'modal_form_request', 'transfer']) {
     assert.ok(names.has(n), 'never produced ' + n)
   }
   assert.ok(core.disconnected?.includes('Griefer'))
+  assert.deepStrictEqual(sentClient.filter(p => p.name === 'transfer').at(-1).params, { server_address: '127.0.0.1', port: 19134, reload_world: true })
   console.log(`selfcheck ok: ${core.modules.size} modules, ${all.length} packets encoded (${[...names].join(', ')})`)
   process.exit(0)
 }, 700)

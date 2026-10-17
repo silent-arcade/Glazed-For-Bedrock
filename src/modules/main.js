@@ -67,7 +67,7 @@ module.exports = [
     onEnable () {
       this.last = 0
       const on = this.online()
-      this.c.chat(on.length ? `§cStaff online: §f${on.join(', ')}` : '§aNo watched staff online.')
+      this.c.info(on.length ? `§cStaff online: §f${on.join(', ')}` : '§aNo watched staff online.')
     },
     clientbound (name, p) {
       if (name !== 'player_list') return
@@ -75,7 +75,7 @@ module.exports = [
       for (const r of p.records) {
         const user = r.type === 'add' ? r.username : this.c.players.get(r.uuid)
         if (!user || !watch.includes(user.toLowerCase())) continue
-        if (this.s['chat-notify']) this.c.chat(r.type === 'add' ? `§cStaff joined: §f${user}` : `§eStaff left or vanished: §f${user}`)
+        if (this.s['chat-notify']) this.c.info(r.type === 'add' ? `§cStaff joined: §f${user}` : `§eStaff left or vanished: §f${user}`)
         if (this.s.sound) this.c.sound('note.bell', r.type === 'add' ? 1 : 0.6)
       }
     },

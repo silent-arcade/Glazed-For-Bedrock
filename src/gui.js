@@ -97,15 +97,22 @@ function openPanel (core, heading, mods) {
 }
 
 function openServer (core) {
-  const s = core.config.server
+  const cur = core.config.server
+  const list = core.servers
+  const current = list.findIndex(s => s.host === cur.host && s.port === cur.port)
   show(core, {
     type: 'custom_form',
     title: '§lServer',
     content: [
-      { type: 'input', text: '§lAddress§r\n§7The Bedrock server to join through this client', placeholder: 'play.example.net', default: s.host },
-      { type: 'input', text: '§lPort', placeholder: '19132', default: String(s.port) }
+      { type: 'dropdown', text: '§lGo to§r\n§7Pick a server and press Submit to switch now', options: list.map(s => s.port === 19132 ? s.host : `${s.host}:${s.port}`), default: Math.max(0, current) },
+      { type: 'input', text: '§lOr add a new server§r\n§7Leave empty to use the one picked above', placeholder: 'play.example.net', default: '' },
+      { type: 'input', text: '§lPort', placeholder: '19132', default: '' }
     ]
-  }, ([host, port]) => core.setServer(host, port || 19132))
+  }, ([pick, host, port]) => {
+    if (String(host).trim()) return core.setServer(host, port || 19132)
+    const s = list[pick]
+    if (s && (s.host !== cur.host || s.port !== cur.port)) core.setServer(s.host, s.port)
+  })
 }
 
 function openSettings (core, mod, back) {
