@@ -1,5 +1,7 @@
 # Glazed Bedrock
 
+> **New here? Read the [step-by-step guide](GUIDE.md)**: setup, the menu, binds, every module and troubleshooting.
+
 A utility client for **Minecraft Bedrock**, built from [Glazed](https://github.com/realnnpg/glazed)'s DonutSMP modules.
 It runs as a proxy: Minecraft connects to it, it connects to DonutSMP, and the modules work by reading and changing packets in between.
 Nothing is injected into the game, so game updates don't break it. You only update `bedrock-protocol` when the network version changes.

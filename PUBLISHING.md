@@ -15,12 +15,12 @@ Check what's about to be uploaded with `git status`. If any of those files show 
 ## First time: create the repository and push
 
 1. Go to <https://github.com/new> and sign in.
-2. **Repository name:** `glazed-bedrock`. **Public** if you want people to read the code and trust it.
+2. **Repository name:** `Glazed-For-Bedrock`. **Public** if you want people to read the code and trust it.
 3. Leave "Add a README", ".gitignore" and "license" **unticked** (the project already has them), then click **Create repository**.
 4. In this folder, open a terminal (in File Explorer, click the address bar, type `cmd`, press Enter) and run:
 
    ```
-   git remote add origin https://github.com/silent-arcade/glazed-bedrock.git
+   git remote add origin https://github.com/silent-arcade/Glazed-For-Bedrock.git
    git push -u origin main
    ```
 
