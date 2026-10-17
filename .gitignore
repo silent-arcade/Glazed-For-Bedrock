@@ -1,0 +1,5 @@
+node_modules/
+auth/
+config.json
+proxy-debug.log
+dist/

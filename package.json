@@ -1,0 +1,22 @@
+{
+  "name": "glazed-bedrock",
+  "version": "0.1.0",
+  "description": "Bedrock proxy utility client with Glazed's DonutSMP modules",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/selfcheck.js",
+    "local": "node src/index.js --local",
+    "bot": "node tools/bot.js",
+    "pack": "node tools/pack.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bedrock-protocol": "3.60.1"
+  },
+  "license": "GPL-3.0-only"
+}
