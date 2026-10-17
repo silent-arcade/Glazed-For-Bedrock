@@ -110,24 +110,13 @@ function drawWaypoints (mod, targets) {
     const refresh = last && now - last.at >= WAYPOINT_REFRESH_TAG_MS
     const due = !last || refresh || (Math.abs(d - last.d) >= WAYPOINT_MIN_STEP && now - last.at >= WAYPOINT_MIN_GAP_MS)
     const text = `${t.text} §7[${d}m]`
-    // setText returns false while the tag isn't ready to be swapped yet; then try again next time
-    if (mod.s['name-tag'] && due && (refresh || mod._wpText.get(t.id) !== text) && t.setText(text) !== false) {
+    // setText returns false while the tag isn't ready to be swapped yet; then try again next time.
+    // Mobs have no setText: the game ignores tag changes on a mob that already exists, so they just get the beam.
+    if (t.setText && mod.s['name-tag'] && due && (refresh || mod._wpText.get(t.id) !== text) && t.setText(text) !== false) {
       mod._wpText.set(t.id, text)
       mod._wpLast.set(t.id, { d, at: now })
     }
     if (d >= 3) c.offerBeam({ x: t.x, y: t.y, z: t.z, d })
-  })
-}
-
-function partialNametag (c, runtimeId, text) {
-  c.toClient('set_entity_data', {
-    runtime_entity_id: BigInt(runtimeId),
-    metadata: [
-      { key: 'nametag', type: 'string', legacy_type: 4, value: text },
-      { key: 'always_show_nametag', type: 'byte', legacy_type: 0, value: text ? 1 : 0 }
-    ],
-    properties: { ints: [], floats: [] },
-    tick: 0n
   })
 }
 
@@ -148,21 +137,18 @@ function entityEsp ({ name, description, types, tag, needsEquipment, color }) {
         else this.found(rid, e, null)
       }
     },
-    onDisable () {
-      for (const rid of this.tagged) partialNametag(this.c, rid, '')
-    },
     onTick () {
       if (!this.targets) return
       const list = [...this.targets].map(rid => [rid, this.c.entities.get(rid)?.pos]).filter(([, p]) => p)
       drawTracers(this, list.map(([, p]) => ({ ...p, label: tag.replace(/§./g, '') })))
-      drawWaypoints(this, list.map(([rid, p]) => ({ id: rid, ...p, text: tag, setText: t => partialNametag(this.c, rid, t) })))
+      drawWaypoints(this, list.map(([rid, p]) => ({ id: rid, ...p })))
     },
+    // metadata is the mob's spawn packet: the only moment a tag can be put on it (later changes are ignored)
     found (rid, e, metadata) {
       ;(this.targets ||= new Set()).add(rid)
       if (this.s['locator-bar']) this.c.waypoint(`${name}:${rid}|`, e.pos, { color, actorId: e.uniqueId })
-      if (this.s['name-tag']) {
-        if (metadata) Core.patchMetadata(metadata, { nametag: tag })
-        else partialNametag(this.c, rid, tag)
+      if (this.s['name-tag'] && metadata) {
+        Core.patchMetadata(metadata, { nametag: tag })
         this.tagged.add(rid)
       }
       // one alert per 8x8 area, so a house full of villagers is one line, not ten
@@ -181,8 +167,8 @@ function entityEsp ({ name, description, types, tag, needsEquipment, color }) {
         if (needsEquipment) this.pending.set(rid, e)
         else this.found(rid, e, p.metadata)
       } else if (pkt === 'set_entity_data' && this.tagged.has(key(p.runtime_entity_id))) {
-        // keep the distance version of the tag, not the plain one
-        if (p.metadata.some(m => m.key === 'flags' || m.key === 'nametag')) Core.patchMetadata(p.metadata, { nametag: this._wpText?.get(key(p.runtime_entity_id)) || tag })
+        // the server re-sends the mob's data from time to time: keep our tag on it
+        if (p.metadata.some(m => m.key === 'flags' || m.key === 'nametag')) Core.patchMetadata(p.metadata, { nametag: tag })
       } else if (pkt === 'mob_equipment' && needsEquipment) {
         const rid = key(p.runtime_entity_id)
         const e = this.pending.get(rid)
@@ -336,65 +322,38 @@ module.exports = [
   {
     name: 'player-esp',
     category: CAT,
-    description: 'Red name tag with distance on every player, visible through walls',
+    // For live distances over players use the Nametags module: tags on existing players can't be changed.
+    description: 'Red name tag on every player as they appear (through walls) + alert',
     settings: {
       alert: alertSetting,
-      'show-distance': { type: 'bool', default: true, desc: 'Add the distance to the tag' },
       ...tracerSettings
     },
-    tag (e) {
-      const d = Math.round(Math.hypot(e.pos.x - this.c.self.pos.x, e.pos.y - 1.62 - this.c.self.pos.y, e.pos.z - this.c.self.pos.z))
-      return `§c${e.username}${this.s['show-distance'] ? ` §7[${d}m]` : ''}`
-    },
+    tag (name) { return `§c${name}` },
     others () { return [...this.c.entities].filter(([, e]) => e.type === 'minecraft:player' && e.username && e.username !== this.c.self.name) },
-    onEnable () { this.alerted = new Set(); this.sent = new Map(); this.last = 0; for (const [rid, e] of this.others()) partialNametag(this.c, rid, this.tag(e)) },
-    // Give players their normal tag back.
-    onDisable () { for (const [rid, e] of this.others()) partialNametag(this.c, rid, e.username) },
+    onEnable () { this.alerted = new Set() },
     clientbound (pkt, p) {
       if (pkt === 'add_player' && p.username && p.username !== this.c.self.name) {
-        const e = this.c.entities.get(key(p.runtime_id))
-        if (e) Core.patchMetadata(p.metadata, { nametag: this.tag(e) })
+        Core.patchMetadata(p.metadata, { nametag: this.tag(p.username) })
         if (!this.alerted.has(p.username)) {
           this.alerted.add(p.username)
           this.c.alert(this.s.alert, `§cPlayer in view: §f${p.username} §7(${Math.round(Math.hypot(p.position.x - this.c.self.pos.x, p.position.z - this.c.self.pos.z))}m)`)
         }
       } else if (pkt === 'set_entity_data') {
         const e = this.c.entities.get(key(p.runtime_entity_id))
-        if (e?.type === 'minecraft:player' && e.username !== this.c.self.name && p.metadata.some(m => m.key === 'nametag')) Core.patchMetadata(p.metadata, { nametag: this.tag(e) })
+        if (e?.type === 'minecraft:player' && e.username !== this.c.self.name && p.metadata.some(m => m.key === 'nametag')) Core.patchMetadata(p.metadata, { nametag: this.tag(e.username) })
       }
     },
     onTick () {
       drawTracers(this, this.others().map(([, e]) => ({ x: e.pos.x, y: e.pos.y - 0.6, z: e.pos.z, label: e.username })))
-      if (Date.now() - this.last < 500) return
-      this.last = Date.now()
-      this.sent ||= new Map()
-      for (const [rid, e] of this.others()) {
-        const t = this.tag(e)
-        if (this.sent.get(rid) === t) continue
-        this.sent.set(rid, t)
-        partialNametag(this.c, rid, t)
-      }
     }
   },
 
   {
     name: 'invis-esp',
     category: CAT,
+    // Works on what the server sends while it's on (best: switch it on before joining or before mobs load).
     description: 'Makes invisible players and mobs visible',
     settings: { players: { type: 'bool', default: true, desc: 'Reveal players' }, mobs: { type: 'bool', default: true, desc: 'Reveal mobs' } },
-    wants (e) { return e?.type === 'minecraft:player' ? this.s.players : this.s.mobs },
-    // Entities that were already invisible before this was switched on.
-    onEnable () {
-      for (const [rid, e] of this.c.entities) {
-        if (!e.flags?.invisible || !this.wants(e)) continue
-        const md = [{ key: 'flags', value: { ...e.flags } }]
-        Core.patchMetadata(md, { reveal: true })
-        this.c.sendFlags(rid, md[0].value)
-      }
-    },
-    onDisable () {
-      for (const [rid, e] of this.c.entities) if (e.flags?.invisible && this.wants(e)) this.c.sendFlags(rid, e.flags)
-    },
     clientbound (pkt, p) {
       if (pkt === 'add_player' && this.s.players) Core.patchMetadata(p.metadata, { reveal: true })
       else if (pkt === 'add_entity' && this.s.mobs) Core.patchMetadata(p.metadata, { reveal: true })

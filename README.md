@@ -72,17 +72,18 @@ Module names ignore dashes: `.t playerdetection` works.
 ### ESP
 A proxy can't draw boxes or lines. Instead, every ESP target gets:
 
-- **A floating name tag** that shows through walls.
-- **A colored waypoint dot on the Locator Bar** at the top of the screen (`waypoint`, on by default). Mob dots follow the mob. Block dots are capped at 16 per module.
+- **A floating name tag** that shows through walls. On blocks it shows a live distance. On mobs the tag is set as the mob appears and stays as it is, because the game ignores later tag changes on a mob.
+- **A waypoint beam** (`waypoint`, on by default): a column of light over the nearest targets.
 - **A small alert above the hotbar** (`alert`: `actionbar`, `chat`, `both` or `off`). Several finds at once queue up.
 - Optional **Discord webhook**.
 
-There are also two optional extras, both off by default:
+Optional extras, all off by default:
 
 - **`tracers`:** a dotted particle line to the 8 nearest targets. Particles don't show through walls.
 - **`tracer-arrow`:** an arrow above the hotbar pointing to the nearest target.
+- **`locator-bar`:** colored dots on the Locator Bar at the top of the screen.
 
-Blocks that were already loaded when you switch an ESP on are found too.
+Blocks that were already loaded when you switch an ESP on are found too. Mobs that were already around get the alert and beam, but no tag. Switch the ESP on before you go looking.
 
 | Module | What it finds |
 |---|---|
@@ -93,9 +94,9 @@ Blocks that were already loaded when you switch an ESP on are found too.
 | Collectible ESP | Item frames (with the item) and banners |
 | Piston ESP | Pistons and sticky pistons |
 | Llama / Pillager / Villager / Wandering ESP | Those mobs |
-| Drowned Trident ESP | Drowned holding a trident |
-| Player ESP | Red tag with live distance on every player, plus an alert when one comes into view |
-| Invis ESP | Makes invisible players and mobs visible (including ones that were already invisible) |
+| Drowned Trident ESP | Drowned holding a trident (alert and beam, no tag) |
+| Player ESP | Red name tag on players as they come into view, plus an alert. For live distances use **Nametags** |
+| Invis ESP | Makes invisible players and mobs visible, for those that turn invisible or appear while it's on |
 | Region Map | Your DonutSMP region and continent above the hotbar |
 
 ### Protection
@@ -122,14 +123,6 @@ Every limit is a setting. Commands sent by macros are also spaced at least 350 m
 | No Weather | Hides rain and thunder (Rain Noti still works) |
 
 A proxy can't change how the game renders. For the biggest FPS gains, change these in **Settings → Video**: render distance 8–12, simulation distance 4, Fancy Graphics off, Beautiful Skies off, Smooth Lighting off, Fancy Leaves off, Particle Render Distance low, V-Sync off, and Ray Tracing / Vibrant Visuals off.
-
-### Not possible in a proxy
-These Glazed modules need to control the game itself (mouse, camera, rendering, or clicking items in chest menus), so they need an injected client:
-
-- **Menu clicking:** Auto Sell, Ah Shield Seller, Auto Spawner Sell, Emergency Order, Inv Sell, Iron Ah Restocker, Order Dropper, Shulker Dropper, Spawner Dropper, Spawner Order, Storage Stealer, and TPA Macro's confirm click.
-- **Movement, aim or mining:** Auto Pearl Chain, Premium Tunnel Base Finder, Spawner Protect, and every PvP module (Anchor Macro, Anti Trap, Auto Double Hand, Auto Inv Totem, Crystal Macro, Hover Totem, Key Pearl, Lunge Macro, Shield Breaker).
-- **Reading every block:** Chunk Finder, 1x1x1 Holes, Covered Hole, Hole Tunnel Stairs, Deepslate, Rotated Deepslate, Dripstone, Kelp, Vine, Sweet Berry, Light, Amethyst, Bedrock Void ESP, and RTPer's biome mode. Block IDs depend on the server's palette, so only block *entities* are read.
-- **Rendering:** Skeleton ESP.
 
 ## Testing
 

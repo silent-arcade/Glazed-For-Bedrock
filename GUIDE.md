@@ -2,6 +2,20 @@
 
 Glazed Bedrock is a utility client for **Minecraft Bedrock** (Windows), made for **DonutSMP**. It runs as a small program next to your game: Minecraft connects to it, and it connects to the server. Nothing is installed into Minecraft, so game updates don't break it.
 
+## How it works (the "proxy")
+
+```
+Minecraft  ⇄  Glazed Bedrock (on your PC, 127.0.0.1:19134)  ⇄  DonutSMP
+```
+
+Normally Minecraft talks straight to DonutSMP. With Glazed Bedrock, it talks to a small program on your own PC instead. That program passes everything on to DonutSMP and back, so you play normally, but it can **read, add, change or hold back** messages on the way:
+
+- **Reads:** it sees what the server sends (players nearby, spawners, chests, rain…), which is how alerts and ESP find things.
+- **Adds:** it can add things only you see: the menu, chat lines, the sidebar, floating tags, particle beams, night vision.
+- **Changes or holds back:** it can change or hold back what your game sends. Fake Pay keeps `/pay` from going out, and Freecam tells the server you're standing still while you fly.
+
+What it **can't** do: draw on your screen (no boxes or lines through walls), press keys or move your mouse, click items in chest menus, or see every block in the world. That's why ESP uses tags and beams, and why binds use emotes and sneak/jump.
+
 ---
 
 ## 1. One-time setup (about 5 minutes)
@@ -23,7 +37,16 @@ Glazed Bedrock is a utility client for **Minecraft Bedrock** (Windows), made for
 2. In Minecraft, join **Glazed**.
 3. After loading, chat shows **`<Glazed> Loaded. Type .gui for the menu…`**. You're in DonutSMP with the client running.
 
-To stop, close the black window. To play without the client, just join DonutSMP normally.
+## 2b. Turning it off
+
+- **Turn off just the cheats, stay connected:** type `.panic` (or press **Turn everything off** in the menu). Every module switches off and you keep playing through the client.
+- **Stop the client:** close the black `start.bat` window, or click it and press `Ctrl + C`. Anyone joined through it is disconnected right away.
+- **Play without it:** join DonutSMP from your normal server list (`donutsmp.net`, not the **Glazed** entry). Nothing is installed in Minecraft, so with the window closed the game is 100% normal.
+- **Start again later:** double-click `start.bat` and join **Glazed**.
+- **Remove it completely:**
+  - Delete the **Glazed** server entry in Minecraft (hold or right-click it, then Delete).
+  - Delete the Glazed Bedrock folder. That also deletes your saved login (`auth`) and settings.
+  - To be extra sure, sign out of other devices at <https://account.microsoft.com/security>.
 
 ## 3. The menu
 
@@ -112,14 +135,17 @@ Then leave and join **Glazed** again; you'll land on the new server. To go back:
 While Freecam is on, the server sees you standing still at that spot, and your clicks are held back. Use `.set glazed-freecam speed 3` for faster flying.
 
 ### ESP (finding things)
-Each one puts a **floating tag** on what it finds, with the live distance, and a **light beam** on the nearest few. A short **alert** appears above the hotbar too.
+Each one puts a **floating tag** on what it finds and a **light beam** on the nearest few. A short **alert** appears above the hotbar too.
+- **Block tags** (spawners, chests…) show a live distance.
+- **Mob tags** are set the moment the mob appears and can't change after that, because the game ignores later changes. So **switch an ESP on before you go looking**: mobs that were already around get the alert and beam, but no tag.
 - **Spawner Notifier**: spawners, with the mob type.
 - **Advanced Stash Finder**: chunks with lots of chests, barrels or shulkers. Set the count with `min-storage`.
 - **Block Notifier**: block types you choose (beacons, conduits…).
 - **Beehive ESP**, **Collectible ESP** (item frames, banners), **Piston ESP**.
-- **Llama / Pillager / Villager / Wandering / Drowned Trident ESP**: those mobs, with a tag on the mob.
-- **Player ESP**: red tag with distance on every player.
-- **Invis ESP**: makes invisible players and mobs visible.
+- **Llama / Pillager / Villager / Wandering ESP**: those mobs, with a tag on the mob.
+- **Drowned Trident ESP**: drowned holding a trident. Alert and beam only, because the trident is only known after the mob has appeared.
+- **Player ESP**: red name tag on players as they come into view, plus an alert. For live distance over players, use **Nametags**.
+- **Invis ESP**: makes invisible players and mobs visible. Switch it on before they turn invisible or come into view.
 - **Region Map**: your DonutSMP region above the hotbar.
 
 Every ESP has these options in its settings:

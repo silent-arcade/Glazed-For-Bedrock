@@ -336,18 +336,6 @@ class Core {
     return true
   }
 
-  setNametag (runtimeId, text) {
-    this.toClient('set_entity_data', {
-      runtime_entity_id: BigInt(runtimeId),
-      metadata: [
-        { key: 'nametag', type: 'string', legacy_type: 4, value: text },
-        { key: 'always_show_nametag', type: 'byte', legacy_type: 0, value: text ? 1 : 0 }
-      ],
-      properties: { ints: [], floats: [] },
-      tick: 0n
-    })
-  }
-
   clearLabels (prefix = '') {
     for (const [k, id] of this.labels) {
       if (!k.startsWith(prefix)) continue
@@ -536,14 +524,9 @@ class Core {
         break
       case 'add_player':
         this.addEntity(p.runtime_id, p.unique_id, 'minecraft:player', p.position, p.username)
-        this.rememberFlags(p.runtime_id, p.metadata)
         break
       case 'add_entity':
         this.addEntity(p.runtime_id, p.unique_id, p.entity_type, p.position)
-        this.rememberFlags(p.runtime_id, p.metadata)
-        break
-      case 'set_entity_data':
-        this.rememberFlags(p.runtime_entity_id, p.metadata)
         break
       case 'update_abilities':
         if (key(p.entity_unique_id) === this.self.uniqueId || !this.selfAbilities) this.selfAbilities = p // the server's real grant, for Freecam to restore
@@ -583,21 +566,6 @@ class Core {
     this.uniqueToRuntime.set(key(uniqueId), key(runtimeId))
   }
 
-  // The server's own flags (copied before modules edit the packet), so modules can reveal or restore later.
-  rememberFlags (runtimeId, metadata) {
-    const e = this.entities.get(key(runtimeId))
-    const flags = metadata?.find(m => m.key === 'flags')
-    if (e && flags) e.flags = { ...flags.value }
-  }
-
-  sendFlags (runtimeId, flags) {
-    this.toClient('set_entity_data', {
-      runtime_entity_id: BigInt(runtimeId),
-      metadata: [{ key: 'flags', type: 'long', legacy_type: 7, value: flags }],
-      properties: { ints: [], floats: [] },
-      tick: 0n
-    })
-  }
 
   moveEntity (runtimeId, pos) {
     const e = this.entities.get(key(runtimeId))

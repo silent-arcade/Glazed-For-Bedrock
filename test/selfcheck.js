@@ -164,18 +164,18 @@ assert.strictEqual(dots.length, 24, `tracer dots: ${dots.length}`)
 assert.ok(dots.every(p => p.params.position.x > 10 && p.params.position.x <= 25.0001), 'dots lie between player and target')
 assert.ok(Math.abs(dots.at(-1).params.position.x - 25) < 0.01, 'line reaches the target')
 
-// in-world waypoint: the mob's tag gets a live distance and a particle beam rises from it
+// in-world waypoint on a mob: a particle beam (its tag was set in the spawn packet and can't change later)
 handleCommand(core, 'set pillager-esp tracers off')
 handleCommand(core, 'set pillager-esp waypoint on')
 mod('pillager-esp')._waypointAt = 0
 const beamBefore = sentClient.filter(p => p.name === 'spawn_particle_effect').length
+const entityDataBefore = sentClient.filter(p => p.name === 'set_entity_data').length
 mod('pillager-esp').onTick()
-const pillagerTag = [...sentClient].reverse().find(p => p.name === 'set_entity_data' && String(p.params.runtime_entity_id) === '80')
-assert.match(pillagerTag.params.metadata[0].value, /Pillager §7\[15m\]/)
-// a server update for that mob keeps the distance version of the tag
+assert.strictEqual(sentClient.filter(p => p.name === 'set_entity_data').length, entityDataBefore, 'no ignored in-place tag updates sent')
+// a server update for that mob keeps our tag on it
 const serverUpdate = { runtime_entity_id: 80n, metadata: [{ key: 'flags', type: 'long', legacy_type: 7, value: { _value: 0n } }], properties: { ints: [], floats: [] }, tick: 5001n }
 clientbound('set_entity_data', serverUpdate)
-assert.match(serverUpdate.metadata.find(m => m.key === 'nametag').value, /\[15m\]/)
+assert.strictEqual(serverUpdate.metadata.find(m => m.key === 'nametag').value, '§cPillager')
 core.beamAt = 0
 core.renderBeams()
 assert.ok(sentClient.filter(p => p.name === 'spawn_particle_effect').length - beamBefore >= 10, 'beam particles')
@@ -422,7 +422,7 @@ setTimeout(() => {
     assert.strictEqual(back.data.name, p.name)
     names.add(p.name)
   }
-  for (const n of ['text', 'set_title', 'play_sound', 'add_entity', 'remove_entity', 'set_entity_data', 'set_display_objective', 'set_score', 'remove_objective', 'command_request', 'player_hotbar', 'request_chunk_radius', 'level_event', 'modal_form_request']) {
+  for (const n of ['text', 'set_title', 'play_sound', 'add_entity', 'remove_entity', 'set_display_objective', 'set_score', 'remove_objective', 'command_request', 'player_hotbar', 'request_chunk_radius', 'level_event', 'modal_form_request']) {
     assert.ok(names.has(n), 'never produced ' + n)
   }
   assert.ok(core.disconnected?.includes('Griefer'))
