@@ -5,7 +5,7 @@ const fs = require('fs')
 const path = require('path')
 
 const ROOT = path.join(__dirname, '..')
-const INCLUDE = ['src', 'tools', 'test', 'start.bat', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', '.gitignore']
+const INCLUDE = ['src', 'tools', 'test', 'start.bat', 'package.json', 'package-lock.json', 'README.md', 'GUIDE.md', 'LICENSE', '.gitignore']
 const out = path.join(ROOT, 'dist', 'glazed-bedrock.zip')
 
 fs.mkdirSync(path.dirname(out), { recursive: true })
